@@ -3,15 +3,17 @@
 #include "interpolador.h"
 #include "corriente.h"
 
-static const float invDT = 1.0f/DT;
+static const float invDT = 1.0f / DT;
 static const float KT = 1.5f * PP * LAMBDA;
 static const float PID_MAX = KT * I_MAX;
 
-static controlador_posicion_t controlador = {
+static controlador_posicion_t controlador_posicion = {
 	.Kp = PID_P,
 	.Ki = PID_I,
-	.Kd = PID_D
+	.Kd = PID_D,
+	.consigna = 0
 };
+static float posicion = 0;
 
 float get_posicion() {
 	/*
@@ -27,24 +29,24 @@ void lazo_posicion() {
 	static float integral = 0.0f;
 
 	// Sampleo posicion
-	float posicion = get_posicion();
+	posicion = get_posicion();
 	float wm = (posicion - prev_position) * invDT;
 
 	// Interpolo nueva consigna
-	float consigna_posicion = interpolar();
+	controlador_posicion.consigna = interpolar();
 
 	// Error de posicion
-	float error = consigna_posicion - posicion;
+	float error = controlador_posicion.consigna - posicion;
 
 	// P[n] = Kp*error[n]
-	float proporcional = controlador.Kp * error;
+	float proporcional = controlador_posicion.Kp * error;
 
-	// I[n] = Ki*dt*(error[n]+error[n-1]) + I[n-1]
-	float tempI = controlador.Ki * DT * (error + prev_error);
+	// I[n] = Ki*dt*(error[n]+error[n-1])/2 + I[n-1]
+	float tempI = controlador_posicion.Ki * DT * (error + prev_error) * 0.5f;
 	integral += tempI;
 
 	// D[n] = Kd*(-wm[n]) (No uso error en PI+D)
-	float derivativa = controlador.Kd * (-wm);
+	float derivativa = controlador_posicion.Kd * (-wm);
 
 	// Antiwindup
 	float integral_max = 0.0f;
@@ -72,16 +74,17 @@ void lazo_posicion() {
 	}
 
 	// T*[n] = P[n] + I[n] + D[n]
-	controlador.consigna_torque = proporcional + integral + derivativa;
+	controlador_posicion.consigna_torque = proporcional + integral + derivativa;
 
 	// Verifico que la consigna de torque no sea mayor que PID_MAX
-	if (controlador.consigna_torque > PID_MAX) {
-		controlador.consigna_torque = PID_MAX;
-	} else if (controlador.consigna_torque < -PID_MAX) {
-		controlador.consigna_torque = -PID_MAX;
+	// Ya que el controlador puede saturar solo con P+D
+	if (controlador_posicion.consigna_torque > PID_MAX) {
+		controlador_posicion.consigna_torque = PID_MAX;
+	} else if (controlador_posicion.consigna_torque < -PID_MAX) {
+		controlador_posicion.consigna_torque = -PID_MAX;
 	}
 }
 
 float get_consigna_torque() {
-	return controlador.consigna_torque;
+	return controlador_posicion.consigna_torque;
 }

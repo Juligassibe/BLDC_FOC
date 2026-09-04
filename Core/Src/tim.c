@@ -22,7 +22,9 @@
 
 /* USER CODE BEGIN 0 */
 
+#include "corriente.h"
 #include "interpolador.h"
+#include "posicion.h"
 
 /* USER CODE END 0 */
 
@@ -252,6 +254,10 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
   /* USER CODE END TIM3_MspInit 0 */
     /* TIM3 clock enable */
     __HAL_RCC_TIM3_CLK_ENABLE();
+
+    /* TIM3 interrupt Init */
+    HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM3_IRQn);
   /* USER CODE BEGIN TIM3_MspInit 1 */
 
   /* USER CODE END TIM3_MspInit 1 */
@@ -278,6 +284,10 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
   /* USER CODE END TIM6_MspInit 0 */
     /* TIM6 clock enable */
     __HAL_RCC_TIM6_CLK_ENABLE();
+
+    /* TIM6 interrupt Init */
+    HAL_NVIC_SetPriority(TIM6_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM6_IRQn);
   /* USER CODE BEGIN TIM6_MspInit 1 */
 
   /* USER CODE END TIM6_MspInit 1 */
@@ -346,6 +356,9 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
   /* USER CODE END TIM3_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM3_CLK_DISABLE();
+
+    /* TIM3 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(TIM3_IRQn);
   /* USER CODE BEGIN TIM3_MspDeInit 1 */
 
   /* USER CODE END TIM3_MspDeInit 1 */
@@ -371,6 +384,9 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
   /* USER CODE END TIM6_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM6_CLK_DISABLE();
+
+    /* TIM6 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(TIM6_IRQn);
   /* USER CODE BEGIN TIM6_MspDeInit 1 */
 
   /* USER CODE END TIM6_MspDeInit 1 */
@@ -379,13 +395,17 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 
 /* USER CODE BEGIN 1 */
 
-volatile uint8_t of = 0;
+volatile uint8_t tim5_of = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	if (htim->Instance == TIM5) {
-		of++;
+	if (htim->Instance == TIM3) {
+		HAL_GPIO_TogglePin(LED_AZUL_GPIO_Port, LED_AZUL_Pin);
+		lazo_corriente();
 	} else if (htim->Instance == TIM6) {
-		interpolar();
+		HAL_GPIO_TogglePin(LED_ROJO_GPIO_Port, LED_ROJO_Pin);
+		lazo_posicion();
+	} else if (htim->Instance == TIM5) {
+		tim5_of++;
 	}
 }
 

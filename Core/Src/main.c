@@ -29,10 +29,16 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "current_sensing.h"
+#include <string.h>
+#include <math.h>
+
 #include "mt6835.h"
 #include "interpolador.h"
 #include "posicion.h"
+#include "corriente.h"
+#include "clark_park.h"
+
+#include "tests.h"
 
 /* USER CODE END Includes */
 
@@ -67,7 +73,6 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 uint32_t raw_adcs = 0;
-float pos = 0;
 
 /* USER CODE END 0 */
 
@@ -112,16 +117,26 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 
+	// INICIALIZACION ADCs
 	HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
 	HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
 	HAL_ADC_Start(&hadc2);
 	HAL_ADCEx_MultiModeStart_DMA(&hadc1, &raw_adcs, 1);
 	uart_receive_dma(&huart4);
-	//HAL_TIM_Base_Start_IT(&htim3);
+
+	// TIMERS PWM Y LAZO CORRIENTE
+	HAL_TIM_Base_Start(&htim3);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-	HAL_TIM_Base_Start_IT(&htim5);
+
+	// TIMER LAZO POSICION
+	HAL_TIM_Base_Start(&htim6);
+
+	// TIMER PARA CONTAR TIEMPO
+	//HAL_TIM_Base_Start_IT(&htim5);
+
+	// TIMER PARA ENCODER
 	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
 	__HAL_TIM_SetCounter(&htim2, INT32_MAX);
 
@@ -138,16 +153,14 @@ int main(void)
 																			MT6835_Z_WIDTH_1LSB,
 																			MT6835_Z_ARE,
 																			MT6835_CCW_AB) != HAL_OK) {
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(LED_ROJO_GPIO_Port, LED_ROJO_Pin, GPIO_PIN_SET);
 	}
 
 	mt6835_set_zero(&hspi1, CS_MT6835_GPIO_Port, CS_MT6835_Pin);
 
-	volatile float pos = 10.0f;
-
 	while (1) {
-		interpolar(pos);
-		HAL_Delay(50);
+		test_seno();
+		HAL_Delay(1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

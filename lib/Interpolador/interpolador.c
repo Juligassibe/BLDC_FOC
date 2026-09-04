@@ -42,14 +42,14 @@ float interpolar() {
 
 	// Aceleracion
 	if (interpolador.t <= interpolador.t_acc) {
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(LED_VERDE_GPIO_Port, LED_VERDE_Pin, GPIO_PIN_SET);
 		// x[n] = x[0] + 0.5*a*t[n]^2
 		interpolador.consigna_posicion = interpolador.posicion_inicial + 0.5f * interpolador.a_max * interpolador.t * interpolador.t;
 	}
 
 	// Velocidad constante
 	else if (interpolador.t <= interpolador.t_acc + interpolador.t_const) {
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(LED_AZUL_GPIO_Port, LED_AZUL_Pin, GPIO_PIN_SET);
 		// x[n] = x[0] + 0.5*a*t_acc^2 + v*(t[n]-t_acc)
 		interpolador.consigna_posicion = interpolador.posicion_inicial + 0.5f * interpolador.a_max * interpolador.t_acc * interpolador.t_acc +
 										 interpolador.v_max * (interpolador.t - interpolador.t_acc);
@@ -57,7 +57,7 @@ float interpolar() {
 
 	// Desaceleracion
 	else if (interpolador.t <= interpolador.t_total) {
-		HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(LED_ROJO_GPIO_Port, LED_ROJO_Pin, GPIO_PIN_SET);
 		// x[n] = x[final] - 0.5*a*(t_total-t[n])^2
 		interpolador.consigna_posicion = interpolador.posicion_final - 0.5f * interpolador.a_max * (interpolador.t_total - interpolador.t) *
 																								   (interpolador.t_total - interpolador.t);

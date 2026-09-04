@@ -57,13 +57,13 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, CS_MT6835_Pin|LD3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, CS_MT6835_Pin|LED_ROJO_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_VERDE_GPIO_Port, LED_VERDE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_AZUL_GPIO_Port, LED_AZUL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : BOTON_Pin */
   GPIO_InitStruct.Pin = BOTON_Pin;
@@ -71,8 +71,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(BOTON_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CS_MT6835_Pin LD3_Pin */
-  GPIO_InitStruct.Pin = CS_MT6835_Pin|LD3_Pin;
+  /*Configure GPIO pins : CS_MT6835_Pin LED_ROJO_Pin */
+  GPIO_InitStruct.Pin = CS_MT6835_Pin|LED_ROJO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -86,19 +86,19 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF8_LPUART1;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LD1_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin;
+  /*Configure GPIO pin : LED_VERDE_Pin */
+  GPIO_InitStruct.Pin = LED_VERDE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(LED_VERDE_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LD2_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin;
+  /*Configure GPIO pin : LED_AZUL_Pin */
+  GPIO_InitStruct.Pin = LED_AZUL_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(LED_AZUL_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI13_IRQn, 0, 0);

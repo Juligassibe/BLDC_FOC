@@ -47,21 +47,21 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     lib/MT6835/mt6835.c
-    lib/Fixed-Point/fixed_point.c
-    lib/current_sensing/current_sensing.c
     lib/Interpolador/interpolador.c
     lib/Control/posicion.c
     lib/Control/corriente.c
+    lib/clark_park/clark_park.c
+    lib/tests/tests.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     lib/MT6835
-    lib/Fixed-Point
-    lib/current_sensing
     lib/Interpolador
     lib/Control
+    lib/clark_park
+    lib/tests
 )
 
 # Add project symbols (macros)
@@ -72,6 +72,12 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 # Add compiler options
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
     -fno-math-errno # sqrt con FPU
+)
+
+# AGREGADO POR MI
+# Print de floats y doubles
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+        -u _printf_float
 )
 
 # Remove wrong libob.a library dependency when using cpp files

@@ -42,7 +42,7 @@ extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN Private defines */
 
-extern volatile uint8_t of;
+extern volatile uint8_t tim5_of;
 
 /* USER CODE END Private defines */
 

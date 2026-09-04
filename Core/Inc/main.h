@@ -68,12 +68,12 @@ void Error_Handler(void);
 #define LPUART1_TX_GPIO_Port GPIOG
 #define LPUART1_RX_Pin GPIO_PIN_8
 #define LPUART1_RX_GPIO_Port GPIOG
-#define LD1_Pin GPIO_PIN_7
-#define LD1_GPIO_Port GPIOC
-#define LD3_Pin GPIO_PIN_9
-#define LD3_GPIO_Port GPIOA
-#define LD2_Pin GPIO_PIN_7
-#define LD2_GPIO_Port GPIOB
+#define LED_VERDE_Pin GPIO_PIN_7
+#define LED_VERDE_GPIO_Port GPIOC
+#define LED_ROJO_Pin GPIO_PIN_9
+#define LED_ROJO_GPIO_Port GPIOA
+#define LED_AZUL_Pin GPIO_PIN_7
+#define LED_AZUL_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

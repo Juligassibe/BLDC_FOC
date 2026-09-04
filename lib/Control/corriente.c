@@ -1,45 +1,114 @@
 #include "corriente.h"
+#include "adc.h"
+#include "tim.h"
+#include "clark_park.h"
+#include "posicion.h"
 
-static const float COS[] = {
-	 1.000000f,  0.999962f,  0.999848f,  0.999657f,  0.999391f,  0.999048f,  0.998630f,  0.998135f,  0.997564f,
-	 0.996917f,  0.996195f,  0.995396f,  0.994522f,  0.993572f,  0.992546f,  0.991445f,  0.990268f,  0.989016f,
-	 0.987688f,  0.986286f,  0.984808f,  0.983255f,  0.981627f,  0.979925f,  0.978148f,  0.976296f,  0.974370f,
-	 0.972370f,  0.970296f,  0.968148f,  0.965926f,  0.963630f,  0.961262f,  0.958820f,  0.956305f,  0.953717f,
-	 0.951057f,  0.948324f,  0.945519f,  0.942641f,  0.939693f,  0.936672f,  0.933580f,  0.930418f,  0.927184f,
-	 0.923880f,  0.920505f,  0.917060f,  0.913545f,  0.909961f,  0.906308f,  0.902585f,  0.898794f,  0.894934f,
-	 0.891007f,  0.887011f,  0.882948f,  0.878817f,  0.874620f,  0.870356f,  0.866025f,  0.861629f,  0.857167f,
-	 0.852640f,  0.848048f,  0.843391f,  0.838671f,  0.833886f,  0.829038f,  0.824126f,  0.819152f,  0.814116f,
-	 0.809017f,  0.803857f,  0.798636f,  0.793353f,  0.788011f,  0.782608f,  0.777146f,  0.771625f,  0.766044f,
-	 0.760406f,  0.754710f,  0.748956f,  0.743145f,  0.737277f,  0.731354f,  0.725374f,  0.719340f,  0.713250f,
-	 0.707107f,  0.700909f,  0.694658f,  0.688355f,  0.681998f,  0.675590f,  0.669131f,  0.662620f,  0.656059f,
-	 0.649448f,  0.642788f,  0.636078f,  0.629320f,  0.622515f,  0.615661f,  0.608761f,  0.601815f,  0.594823f,
-	 0.587785f,  0.580703f,  0.573576f,  0.566406f,  0.559193f,  0.551937f,  0.544639f,  0.537300f,  0.529919f,
-	 0.522499f,  0.515038f,  0.507538f,  0.500000f,  0.492424f,  0.484810f,  0.477159f,  0.469472f,  0.461749f,
-	 0.453990f,  0.446198f,  0.438371f,  0.430511f,  0.422618f,  0.414693f,  0.406737f,  0.398749f,  0.390731f,
-	 0.382683f,  0.374607f,  0.366501f,  0.358368f,  0.350207f,  0.342020f,  0.333807f,  0.325568f,  0.317305f,
-	 0.309017f,  0.300706f,  0.292372f,  0.284015f,  0.275637f,  0.267238f,  0.258819f,  0.250380f,  0.241922f,
-	 0.233445f,  0.224951f,  0.216440f,  0.207912f,  0.199368f,  0.190809f,  0.182236f,  0.173648f,  0.165048f,
-	 0.156434f,  0.147809f,  0.139173f,  0.130526f,  0.121869f,  0.113203f,  0.104528f,  0.095846f,  0.087156f,
-	 0.078459f,  0.069756f,  0.061049f,  0.052336f,  0.043619f,  0.034899f,  0.026177f,  0.017452f,  0.008727f,
-	 0.000000f, -0.008727f, -0.017452f, -0.026177f, -0.034899f, -0.043619f, -0.052336f, -0.061049f, -0.069756f,
-	-0.078459f, -0.087156f, -0.095846f, -0.104528f, -0.113203f, -0.121869f, -0.130526f, -0.139173f, -0.147809f,
-	-0.156434f, -0.165048f, -0.173648f, -0.182236f, -0.190809f, -0.199368f, -0.207912f, -0.216440f, -0.224951f,
-	-0.233445f, -0.241922f, -0.250380f, -0.258819f, -0.267238f, -0.275637f, -0.284015f, -0.292372f, -0.300706f,
-	-0.309017f, -0.317305f, -0.325568f, -0.333807f, -0.342020f, -0.350207f, -0.358368f, -0.366501f, -0.374607f,
-	-0.382683f, -0.390731f, -0.398749f, -0.406737f, -0.414693f, -0.422618f, -0.430511f, -0.438371f, -0.446198f,
-	-0.453990f, -0.461749f, -0.469472f, -0.477159f, -0.484810f, -0.492424f, -0.500000f, -0.507538f, -0.515038f,
-	-0.522499f, -0.529919f, -0.537300f, -0.544639f, -0.551937f, -0.559193f, -0.566406f, -0.573576f, -0.580703f,
-	-0.587785f, -0.594823f, -0.601815f, -0.608761f, -0.615661f, -0.622515f, -0.629320f, -0.636078f, -0.642788f,
-	-0.649448f, -0.656059f, -0.662620f, -0.669131f, -0.675590f, -0.681998f, -0.688355f, -0.694658f, -0.700909f,
-	-0.707107f, -0.713250f, -0.719340f, -0.725374f, -0.731354f, -0.737277f, -0.743145f, -0.748956f, -0.754710f,
-	-0.760406f, -0.766044f, -0.771625f, -0.777146f, -0.782608f, -0.788011f, -0.793353f, -0.798636f, -0.803857f,
-	-0.809017f, -0.814116f, -0.819152f, -0.824126f, -0.829038f, -0.833886f, -0.838671f, -0.843391f, -0.848048f,
-	-0.852640f, -0.857167f, -0.861629f, -0.866025f, -0.870356f, -0.874620f, -0.878817f, -0.882948f, -0.887011f,
-	-0.891007f, -0.894934f, -0.898794f, -0.902585f, -0.906308f, -0.909961f, -0.913545f, -0.917060f, -0.920505f,
-	-0.923880f, -0.927184f, -0.930418f, -0.933580f, -0.936672f, -0.939693f, -0.942641f, -0.945519f, -0.948324f,
-	-0.951057f, -0.953717f, -0.956305f, -0.958820f, -0.961262f, -0.963630f, -0.965926f, -0.968148f, -0.970296f,
-	-0.972370f, -0.974370f, -0.976296f, -0.978148f, -0.979925f, -0.981627f, -0.983255f, -0.984808f, -0.986286f,
-	-0.987688f, -0.989016f, -0.990268f, -0.991445f, -0.992546f, -0.993572f, -0.994522f, -0.995396f, -0.996195f,
-	-0.996917f, -0.997564f, -0.998135f, -0.998630f, -0.999048f, -0.999391f, -0.999657f, -0.999848f, -0.999962f,
+static const float adc_scale = 3.0f / (ADC_3A - ADC_0A);
+static const float inv_Kt = 1.0f / (1.5f * PP * LAMBDA);
+static const float invDti = 1.0f / DTi;
+static const float inv_VCC = 1.0f / VCC;
+
+static int16_t offset_adc1 = 0;
+static int16_t offset_adc2 = 0;
+
+static magnitud_abc_t corrientes_fase = {0};
+static magnitud_qd0_t corrientes_qd0 = {0};
+static magnitud_abc_t cons_tension_fase = {0};
+static magnitud_qd0_t cons_tension_qd0 = {0};
+
+static motor_specs_t motor = {
+	.Rs = R_FASE,
+	.Lq = LQ,
+	.Ld = LD,
+	.lambda = LAMBDA
 };
 
+static controlador_corriente_t controlador_corriente = {
+	.Pq = POLO_CORRIENTE * LQ,
+	.Pd = POLO_CORRIENTE * LD,
+	.consigna_iq = 0,
+	.consigna_id = 0
+};
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+	uint16_t adc1 = (uint16_t)(raw_adcs & 0xFFFF);
+	uint16_t adc2 = (uint16_t)((raw_adcs >> 16) & 0xFFFF);
+
+	float xn1 = (float)(adc1 + offset_adc1 - ADC_0A) * adc_scale;
+	float xn2 = (float)(adc2 + offset_adc2 - ADC_0A) * adc_scale;
+
+	corrientes_fase.a = corrientes_fase.a + IIR_ALPHA * (xn1 - corrientes_fase.a);
+	corrientes_fase.b = corrientes_fase.b + IIR_ALPHA * (xn2 - corrientes_fase.b);
+	corrientes_fase.c = -(corrientes_fase.a + corrientes_fase.b);
+}
+
+void set_adc_offsets() {
+	// Delay para dejar que se estabilicen los ADCs
+	HAL_Delay(200);
+	uint32_t sum_adc1 = 0;
+	uint32_t sum_adc2 = 0;
+
+	for (int i = 0; i < 64; i++) {
+		sum_adc1 += (uint16_t)(raw_adcs & 0xFFFF);
+		sum_adc2 += (uint16_t)((raw_adcs >> 16) & 0xFFFF);
+		HAL_Delay(2);
+	}
+
+	offset_adc1 = ADC_0A - (sum_adc1 >> 6);
+	offset_adc2 = ADC_0A - (sum_adc2 >> 6);
+}
+
+void lazo_corriente() {
+	static float prev_tita_m = 0;
+
+	if (corrientes_fase.a > I_MAX || corrientes_fase.a < I_MIN ||
+		corrientes_fase.b > I_MAX || corrientes_fase.b < I_MIN ||
+		corrientes_fase.c > I_MAX || corrientes_fase.c < I_MIN) {
+
+		// LUEGO CAMBIAR POR HANDLER ADECUADO
+		HAL_GPIO_WritePin(LED_ROJO_GPIO_Port, LED_ROJO_Pin, GPIO_PIN_RESET);
+		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
+		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3);
+		__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_UPDATE);
+		__HAL_TIM_DISABLE_IT(&htim6, TIM_IT_UPDATE);
+	}
+
+	float tita_m = get_posicion();
+	float wm = (tita_m - prev_tita_m) * invDti;
+	float tita_e = tita_m * PP;
+
+	clark_park_T(&corrientes_fase, &corrientes_qd0, tita_e);
+
+	// i_q*[n] = Tm*[n] / Kt
+	float consigna_iq = get_consigna_torque() * inv_Kt;
+
+	// e_iq[n] = i_q*[n] - i_q[n]
+	float error_iq = consigna_iq - corrientes_qd0.q;
+
+	// vq*[n] = Pq * e_iq[n] + caida ohmica + desacople id + caida BEMF
+	cons_tension_qd0.q = controlador_corriente.Pq * error_iq +
+						corrientes_qd0.q * motor.Rs +				// Caida ohmica
+						PP * wm * motor.Ld * corrientes_qd0.d +		// Desacople id
+						PP * motor.lambda * wm;						// Caida BEMF
+
+	/*
+	 * vd*[n] = Pd * (-id[n]) + caida ohmica + desacople iq
+	 * ed[n] = -id[n] ya que la consigna de id es 0
+	 */
+
+	cons_tension_qd0.d = -controlador_corriente.Pd * corrientes_qd0.d +
+						corrientes_qd0.d * motor.Rs +					// Caida ohmica
+						PP * wm * motor.Lq * corrientes_qd0.q;			// Desacople iq
+
+	inv_clark_park_T(&cons_tension_qd0, &cons_tension_fase, tita_e);
+
+	float duty_a = 0.5f + cons_tension_fase.a * inv_VCC;
+	float duty_b = 0.5f + cons_tension_fase.b * inv_VCC;
+	float duty_c = 0.5f + cons_tension_fase.c * inv_VCC;
+
+	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, (uint32_t)(duty_a * __HAL_TIM_GetAutoreload(&htim3)));
+	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, (uint32_t)(duty_b * __HAL_TIM_GetAutoreload(&htim3)));
+	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, (uint32_t)(duty_c * __HAL_TIM_GetAutoreload(&htim3)));
+}

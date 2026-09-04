@@ -58,7 +58,9 @@
 extern DMA_HandleTypeDef hdma_adc1;
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
+extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim5;
+extern TIM_HandleTypeDef htim6;
 extern DMA_HandleTypeDef hdma_uart4_rx;
 extern DMA_HandleTypeDef hdma_uart4_tx;
 extern UART_HandleTypeDef huart4;
@@ -276,6 +278,20 @@ void ADC1_2_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM3 global interrupt.
+  */
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+
+  /* USER CODE END TIM3_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM5 global interrupt.
   */
 void TIM5_IRQHandler(void)
@@ -287,6 +303,20 @@ void TIM5_IRQHandler(void)
   /* USER CODE BEGIN TIM5_IRQn 1 */
 
   /* USER CODE END TIM5_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM6 global interrupt.
+  */
+void TIM6_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM6_IRQn 0 */
+
+  /* USER CODE END TIM6_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim6);
+  /* USER CODE BEGIN TIM6_IRQn 1 */
+
+  /* USER CODE END TIM6_IRQn 1 */
 }
 
 /**
