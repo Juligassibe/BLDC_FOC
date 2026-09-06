@@ -24,6 +24,7 @@
 /* USER CODE BEGIN 0 */
 
 #include "tim.h"
+#include "general.h"
 
 /* USER CODE END 0 */
 
@@ -110,9 +111,7 @@ void MX_GPIO_Init(void)
 
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == BOTON_Pin) {
-		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
-		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3);
+		parada_emergencia();
 	}
 }
 

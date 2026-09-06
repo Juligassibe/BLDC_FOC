@@ -21,6 +21,7 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MAIN_H
 #define __MAIN_H
+#include "general.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +60,9 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+void enviar_cola_estados(estados_e estado);
+void enviar_cola_fallas(return_codes_e falla);
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -80,9 +84,10 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-extern uint32_t raw_adcs;
 extern QueueHandle_t cola_consola;
 extern QueueHandle_t cola_errores;
+extern QueueHandle_t cola_estados;
+extern estados_e estado;
 
 /* USER CODE END Private defines */
 

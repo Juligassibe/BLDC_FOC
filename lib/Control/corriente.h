@@ -1,6 +1,8 @@
 #ifndef CORRIENTE_H
 #define CORRIENTE_H
 
+#include <stdint.h>
+
 #define ADC_0A			3103
 #define ADC_3A			3792
 #define IIR_ALPHA		0.015f
@@ -9,7 +11,7 @@
 
 #define VCC 12.0f
 #define I_MAX 12.0f
-#define I_MIN (-I_MAX)
+#define I_LIM 13.0f
 
 #define POLO_CORRIENTE 5000		// s = -5000
 
@@ -30,6 +32,8 @@ typedef struct {
 	float Ld;
 	float lambda;
 } motor_specs_t;
+
+extern uint32_t raw_adcs;
 
 void set_adc_offsets();
 void lazo_corriente();

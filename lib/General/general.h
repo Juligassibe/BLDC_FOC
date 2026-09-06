@@ -7,14 +7,23 @@ typedef enum {
 	ADC2_CAL,
 	ADC2_START,
 	ADC_MULTIMODE,
+	ADC_OFF,
 	PWM_CH1,
 	PWM_CH2,
 	PWM_CH3,
 	TIM_POS_START,
 	TIM_ENC_START,
-	ENCODER_CONF,
+	ENCODER_CONFIG,
 	ENCODER_ZERO
 } return_codes_e;
+
+typedef enum {
+	INIT = 0,
+	IDLE,
+	PARADA,
+	CONTROL,
+	FALLA
+} estados_e;
 
 // INICIALIZACION PERIFERICOS
 return_codes_e init_pwm();
@@ -28,8 +37,8 @@ void init_sistema();
 void estado_sistema();
 void iniciar_lazos();
 void parar_lazos();
+void parada_emergencia();
 void mover(float angulo);
-void mover_a_cero();
 void leer_posicion();
 void calibrar_adcs();
 

@@ -45,6 +45,11 @@ return_codes_e init_adcs() {
 
 	set_adc_offsets();
 
+	if ((raw_adcs & 0xFFFF) == 0 ||
+		((raw_adcs >> 16) & 0xFFFF) == 0) {
+		return ADC_OFF;
+	}
+
 	return INIT_OK;
 }
 
@@ -71,14 +76,14 @@ return_codes_e alinear_rotor() {
 
 	encoder_t encoder_conf = {0};
 
-	if (init_encoder(&hspi1, CS_MT6835_GPIO_Port, CS_MT6835_Pin, &encoder_conf, ENCODER_PPR/2,
-																				MT6835_ABZ_NO_SWAP,
-																				MT6835_ZRE,
-																				MT6835_Z_WIDTH_1LSB,
-																				MT6835_Z_ARE,
-																				MT6835_CCW_AB) != HAL_OK) {
+	if (init_encoder(&hspi1, CS_MT6835_GPIO_Port, CS_MT6835_Pin, &encoder_conf, ENCODER_PPR / 2,
+					 MT6835_ABZ_NO_SWAP,
+					 MT6835_ZRE,
+					 MT6835_Z_WIDTH_1LSB,
+					 MT6835_Z_ARE,
+					 MT6835_CCW_AB) != HAL_OK) {
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
-		return ENCODER_CONF;
+		return ENCODER_CONFIG;
 	}
 
 	// Hago 0 en encoder mientras eje d esta alineado con fase a
@@ -98,44 +103,50 @@ return_codes_e alinear_rotor() {
 }
 
 void init_sistema() {
-	return_codes_e estado_init = INIT_OK;
+	return_codes_e init = INIT_OK;
 
-	estado_init = init_pwm();
+	init = init_pwm();
 
-	if (estado_init != INIT_OK) {
-		xQueueSend(cola_errores, &estado_init, 100);
+	if (init != INIT_OK) {
+		xQueueSend(cola_errores, &init, 100);
 		return;
 	}
 
-	estado_init = init_adcs();
+	init = init_adcs();
 
-	if (estado_init != INIT_OK) {
-		xQueueSend(cola_errores, &estado_init, 100);
+	if (init != INIT_OK) {
+		xQueueSend(cola_errores, &init, 100);
 		return;
 	}
 
-	estado_init = init_timer_pos();
+	init = init_timer_pos();
 
-	if (estado_init != INIT_OK) {
-		xQueueSend(cola_errores, &estado_init, 100);
+	if (init != INIT_OK) {
+		xQueueSend(cola_errores, &init, 100);
 		return;
 	}
 
-	estado_init = init_timer_encoder();
+	init = init_timer_encoder();
 
-	if (estado_init != INIT_OK) {
-		xQueueSend(cola_errores, &estado_init, 100);
+	if (init != INIT_OK) {
+		xQueueSend(cola_errores, &init, 100);
 		return;
 	}
 
-	estado_init = alinear_rotor();
+	init = alinear_rotor();
 
-	if (estado_init != INIT_OK) {
-		xQueueSend(cola_errores, &estado_init, 100);
+	if (init != INIT_OK) {
+		xQueueSend(cola_errores, &init, 100);
 		return;
 	}
 
 	uart_receive_dma(&huart4);
+
+	/*
+	 * Si el sistema inicializa bien paso a estado IDLE
+	 * Cualquier falla es manejada en la tarea de fallas y pasa a estado FALLA
+	*/
+	enviar_cola_estados(IDLE);
 }
 
 void estado_sistema() {
@@ -143,30 +154,82 @@ void estado_sistema() {
 }
 
 void iniciar_lazos() {
-	__HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-	__HAL_TIM_CLEAR_FLAG(&htim6, TIM_FLAG_UPDATE);
+	switch (estado) {
+		case IDLE:
+			__HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+			__HAL_TIM_CLEAR_FLAG(&htim6, TIM_FLAG_UPDATE);
 
-	__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
-	__HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
+			__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
+			__HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
+
+			enviar_cola_estados(CONTROL);
+			break;
+
+		case CONTROL:
+			HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Lazos de control ya iniciados\r\n", 31);
+			break;
+
+		default:
+			HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Reiniciar sistema\r\n", 19);
+			break;
+	}
 }
 
 void parar_lazos() {
-	__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_UPDATE);
-	__HAL_TIM_DISABLE_IT(&htim6, TIM_IT_UPDATE);
+	switch (estado) {
+		case CONTROL:
+			__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_UPDATE);
+			__HAL_TIM_DISABLE_IT(&htim6, TIM_IT_UPDATE);
+
+			enviar_cola_estados(IDLE);
+			break;
+
+		case IDLE:
+			HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Lazos de control ya detenidos\r\n", 31);
+			break;
+
+		default:
+			HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Reiniciar sistema\r\n", 19);
+			break;
+	}
+}
+
+void parada_emergencia() {
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3);
+
+	enviar_cola_estados(PARADA);
 }
 
 void mover(float angulo) {
-	consigna_nueva(angulo);
-}
-
-void mover_a_cero() {
-	HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Cero\r\n", 6);
+	if (estado == CONTROL) {
+		consigna_nueva(angulo);
+	} else {
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Iniciar lazos de control\r\n", 26);
+	}
 }
 
 void leer_posicion() {
-	HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Posicion\r\n", 10);
+	if (estado == CONTROL || estado == IDLE) {
+		/*
+		 * Si NO declaro como static al terminar la ejecucion de la funcion, mientras el DMA lee el buffer para transmitir los
+		 * fatos por UART puede leer basura.
+		*/
+		static char cadena[16] = {0};
+		uint8_t n = 0;
+
+		n = snprintf(cadena, sizeof(cadena), "%.2f", get_posicion());
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)cadena, n);
+	} else {
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Reiniciar sistema\r\n", 19);
+	}
 }
 
 void calibrar_adcs() {
-	HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"ADCs\r\n", 6);
+	if (estado == IDLE) {
+		set_adc_offsets();
+	} else {
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Reiniciar sistema\r\n", 19);
+	}
 }

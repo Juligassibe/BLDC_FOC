@@ -12,6 +12,7 @@ static const float inv_VCC = 1.0f / VCC;
 
 static int16_t offset_adc1 = 0;
 static int16_t offset_adc2 = 0;
+uint32_t raw_adcs = 0;
 
 static volatile magnitud_abc_t corrientes_fase = {0};
 static volatile magnitud_qd0_t corrientes_qd0 = {0};
@@ -62,9 +63,9 @@ void set_adc_offsets() {
 void lazo_corriente() {
 	static float prev_tita_m = 0;
 
-	if (corrientes_fase.a > I_MAX || corrientes_fase.a < I_MIN ||
-		corrientes_fase.b > I_MAX || corrientes_fase.b < I_MIN ||
-		corrientes_fase.c > I_MAX || corrientes_fase.c < I_MIN) {
+	if (corrientes_fase.a > I_LIM || corrientes_fase.a < -I_LIM ||
+		corrientes_fase.b > I_LIM || corrientes_fase.b < -I_LIM ||
+		corrientes_fase.c > I_LIM || corrientes_fase.c < -I_LIM) {
 
 		// LUEGO CAMBIAR POR HANDLER ADECUADO
 		HAL_GPIO_WritePin(LED_ROJO_GPIO_Port, LED_ROJO_Pin, GPIO_PIN_RESET);
