@@ -1,6 +1,7 @@
 #include "corriente.h"
 #include "adc.h"
 #include "tim.h"
+#include "usart.h"
 #include "clark_park.h"
 #include "posicion.h"
 
@@ -12,10 +13,11 @@ static const float inv_VCC = 1.0f / VCC;
 static int16_t offset_adc1 = 0;
 static int16_t offset_adc2 = 0;
 
-static magnitud_abc_t corrientes_fase = {0};
-static magnitud_qd0_t corrientes_qd0 = {0};
-static magnitud_abc_t cons_tension_fase = {0};
-static magnitud_qd0_t cons_tension_qd0 = {0};
+static volatile magnitud_abc_t corrientes_fase = {0};
+static volatile magnitud_qd0_t corrientes_qd0 = {0};
+static volatile magnitud_qd0_t cons_corrientes_qd0 = {0};
+static volatile magnitud_abc_t cons_tension_fase = {0};
+static volatile magnitud_qd0_t cons_tension_qd0 = {0};
 
 static motor_specs_t motor = {
 	.Rs = R_FASE,
@@ -25,10 +27,8 @@ static motor_specs_t motor = {
 };
 
 static controlador_corriente_t controlador_corriente = {
-	.Pq = POLO_CORRIENTE * LQ,
-	.Pd = POLO_CORRIENTE * LD,
-	.consigna_iq = 0,
-	.consigna_id = 0
+	.Pq = 0.1f, // Luego probar de nuevo con 5000 * Lq
+	.Pd = 0.07f // Luego probar de nuevo con 5000 * Ld
 };
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
@@ -73,19 +73,23 @@ void lazo_corriente() {
 		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3);
 		__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_UPDATE);
 		__HAL_TIM_DISABLE_IT(&htim6, TIM_IT_UPDATE);
+
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"OC\r\n", 4);
+
+		return;
 	}
 
 	float tita_m = get_posicion();
-	float wm = (tita_m - prev_tita_m) * invDti;
+	float wm = (tita_m - prev_tita_m) * invDti * DEG2RAD;
 	float tita_e = tita_m * PP;
 
 	clark_park_T(&corrientes_fase, &corrientes_qd0, tita_e);
 
 	// i_q*[n] = Tm*[n] / Kt
-	float consigna_iq = get_consigna_torque() * inv_Kt;
+	cons_corrientes_qd0.q = get_consigna_torque() * inv_Kt;
 
 	// e_iq[n] = i_q*[n] - i_q[n]
-	float error_iq = consigna_iq - corrientes_qd0.q;
+	float error_iq = cons_corrientes_qd0.q - corrientes_qd0.q;
 
 	// vq*[n] = Pq * e_iq[n] + caida ohmica + desacople id + caida BEMF
 	cons_tension_qd0.q = controlador_corriente.Pq * error_iq +
@@ -98,9 +102,7 @@ void lazo_corriente() {
 	 * ed[n] = -id[n] ya que la consigna de id es 0
 	 */
 
-	cons_tension_qd0.d = -controlador_corriente.Pd * corrientes_qd0.d +
-						corrientes_qd0.d * motor.Rs +					// Caida ohmica
-						PP * wm * motor.Lq * corrientes_qd0.q;			// Desacople iq
+	cons_tension_qd0.d = -controlador_corriente.Pd * corrientes_qd0.d;
 
 	inv_clark_park_T(&cons_tension_qd0, &cons_tension_fase, tita_e);
 
@@ -111,4 +113,6 @@ void lazo_corriente() {
 	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, (uint32_t)(duty_a * __HAL_TIM_GetAutoreload(&htim3)));
 	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, (uint32_t)(duty_b * __HAL_TIM_GetAutoreload(&htim3)));
 	__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, (uint32_t)(duty_c * __HAL_TIM_GetAutoreload(&htim3)));
+
+	prev_tita_m = tita_m;
 }

@@ -2,25 +2,28 @@
 #include "tim.h"
 #include "interpolador.h"
 #include "corriente.h"
+#include "user_constants.h"
 
 static const float invDT = 1.0f / DT;
 static const float KT = 1.5f * PP * LAMBDA;
 static const float PID_MAX = KT * I_MAX;
+static const float STEP2DEG = 360.0f / ENCODER_PPR;
 
-static controlador_posicion_t controlador_posicion = {
+static volatile controlador_posicion_t controlador_posicion = {
 	.Kp = PID_P,
 	.Ki = PID_I,
 	.Kd = PID_D,
+	.consigna_torque = 0,
 	.consigna = 0
 };
-static float posicion = 0;
+static volatile float posicion = 0;
 
 float get_posicion() {
 	/*
 	 * NO DEJAR HARDCODEADO EL 0.18f DE RESOLUCION DEL ENCODER
 	 * PONER EN FUNCION DE LOS ppr PUESTOS EN EL ENCODER
 	 */
-	return (float)((int32_t)(__HAL_TIM_GetCounter(&htim2) - INT32_MAX)) * 0.18f;
+	return (float)((int32_t)(__HAL_TIM_GetCounter(&htim2) - ENCODER_CNT_ZERO)) * STEP2DEG;
 }
 
 void lazo_posicion() {
@@ -83,6 +86,9 @@ void lazo_posicion() {
 	} else if (controlador_posicion.consigna_torque < -PID_MAX) {
 		controlador_posicion.consigna_torque = -PID_MAX;
 	}
+
+	prev_position = posicion;
+	prev_error = error;
 }
 
 float get_consigna_torque() {

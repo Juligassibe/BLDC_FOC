@@ -74,12 +74,13 @@ float seno(float angulo) {
 	return coseno(angulo-90.0f);
 }
 
-void clark_park_T(magnitud_abc_t *in, magnitud_qd0_t *out, float tita_e) {
+void clark_park_T(volatile magnitud_abc_t *in, volatile magnitud_qd0_t *out, float tita_e) {
 	out->q = 2.0f * ( -seno(tita_e) * in->a -   seno(tita_e - 120.0f) * in->b -   seno(tita_e + 120.0f) * in->c) / 3.0f;
 	out->d = 2.0f * (coseno(tita_e) * in->a + coseno(tita_e - 120.0f) * in->b + coseno(tita_e + 120.0f) * in->c) / 3.0f;
 }
 
-void inv_clark_park_T(magnitud_qd0_t *in, magnitud_abc_t *out, float tita_e) {
+void inv_clark_park_T(volatile magnitud_qd0_t *in, volatile magnitud_abc_t *out, float tita_e) {
+
 	out->a = -seno(tita_e)          * in->q + coseno(tita_e)		  * in->d;
 	out->b = -seno(tita_e - 120.0f) * in->q + coseno(tita_e - 120.0f) * in->d;
 	out->c = -seno(tita_e + 120.0f) * in->q + coseno(tita_e + 120.0f) * in->d;

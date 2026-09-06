@@ -34,6 +34,9 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "FreeRTOS.h"
+#include "queue.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -78,6 +81,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 extern uint32_t raw_adcs;
+extern QueueHandle_t cola_consola;
+extern QueueHandle_t cola_errores;
 
 /* USER CODE END Private defines */
 

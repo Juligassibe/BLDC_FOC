@@ -41,6 +41,11 @@ extern UART_HandleTypeDef huart4;
 
 #define RX_MAX 32
 
+typedef struct {
+	char mensaje[RX_MAX];
+	uint8_t len;
+} mensaje_cli_t;
+
 /* USER CODE END Private defines */
 
 void MX_UART4_Init(void);

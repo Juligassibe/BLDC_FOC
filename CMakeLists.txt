@@ -52,6 +52,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     lib/Control/corriente.c
     lib/clark_park/clark_park.c
     lib/tests/tests.c
+    lib/General/general.c
 )
 
 # Add include paths
@@ -62,6 +63,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     lib/Control
     lib/clark_park
     lib/tests
+    lib/General
 )
 
 # Add project symbols (macros)

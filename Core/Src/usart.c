@@ -22,6 +22,8 @@
 
 /* USER CODE BEGIN 0 */
 
+#include <string.h>
+
 #include "tim.h"
 #include "tests.h"
 #include "interpolador.h"
@@ -165,7 +167,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_uart4_tx);
 
     /* UART4 interrupt Init */
-    HAL_NVIC_SetPriority(UART4_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(UART4_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(UART4_IRQn);
   /* USER CODE BEGIN UART4_MspInit 1 */
 
@@ -210,11 +212,26 @@ static uint8_t RX_BUF[RX_MAX] = {0};
 
 void uart_receive_dma(UART_HandleTypeDef *huart) {
 	HAL_UARTEx_ReceiveToIdle_DMA(huart, RX_BUF, RX_MAX);
-	__HAL_DMA_DISABLE_IT(huart4.hdmarx, DMA_IT_HT);
+	__HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
 	if (huart->Instance == UART4) {
+		if (Size < RX_MAX) {
+			mensaje_cli_t recibido = {0};
+
+			memcpy(recibido.mensaje, RX_BUF, Size);
+			recibido.mensaje[Size] = '\0';
+			recibido.len = Size;
+
+			xQueueSendFromISR(cola_consola, (void *)&recibido, &xHigherPriorityTaskWoken);
+		} else {
+			HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Comando largo\r\n", 15);
+		}
+
+		/*
 		char *end;
 		float nueva = strtof((char *)RX_BUF, &end);
 
@@ -233,9 +250,12 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 		} else if (RX_BUF[0] == 'd') {
 			__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, 0*__HAL_TIM_GetAutoreload(&htim3));
 		}
+		*/
 	}
 
 	uart_receive_dma(&huart4);
+
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 /* USER CODE END 1 */
