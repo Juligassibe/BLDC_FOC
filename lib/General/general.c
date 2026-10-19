@@ -140,6 +140,8 @@ void init_sistema() {
 		return;
 	}
 
+	interpolador_init(&interpolador, DT, V_MAX, A_MAX);
+
 	uart_receive_dma(&huart4);
 
 	/*
@@ -204,7 +206,7 @@ void parada_emergencia() {
 
 void mover(float angulo) {
 	if (estado == CONTROL) {
-		consigna_nueva(get_posicion(), angulo);
+		interpolador_nueva_xf((interpolador_t *)&interpolador, get_posicion(), angulo);
 	} else {
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Iniciar lazos de control\r\n", 26);
 	}

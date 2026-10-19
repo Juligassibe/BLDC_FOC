@@ -14,8 +14,12 @@
 
 #define PP				7		// Pares de polos
 #define R_FASE 0.07f				// Rs = 0.07 ohms
-#define LQ 0.0006f			// Lq = 0.6 mH
-#define LD 0.0005f			// Ld = 0.5 mH
+#define LQ 0.0002f			// Lq = 0.6 mH
+#define LD 0.00016f			// Ld = 0.5 mH
 #define LAMBDA 0.0001f		// Flujo concatenado
+
+#define DT		0.001f
+#define V_MAX	360.0f
+#define A_MAX	1080.0f
 
 #endif //USER_CONSTANTS_H

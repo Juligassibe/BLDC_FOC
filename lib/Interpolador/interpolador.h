@@ -1,26 +1,33 @@
 #ifndef INTERPOLADOR_H
 #define INTERPOLADOR_H
 
-#define V_MAX	360.0f
-#define A_MAX	1080.0f
-#define DT		0.001f
+#include <stdint.h>
 
 typedef struct {
-	float v_max;				// Velocidad max °/s
-	float a_max;				// Aceleracion max °/s^2
-	const float dt;				// Delta de tiempo
-	float t;					// Tiempo actual relativo al inicio de la interpolacion
+	// Config
+	float dt;				// Delta de tiempo
+	float v_max;				// Velocidad max rad/s
+	float a_max;				// Aceleracion max rad/s^2
+
+	// Perfil actual
+	float x0;					// Posicion cuando llega una consigna de posicion nueva
+	float xf;					// Posicion final deseada
+	float dir;					// Sentido de movimiento
+	float distancia;			// Abs(desplazamiento)
+	float v_pico;				// Velocidad pico para un desplazamiento dado, v_pico <= v_max
+	float d_acc;
 	float t_acc;				// Tiempo de aceleracion + tiempo desaceleracion
 	float t_const;				// Tiempo a velocidad constante
-	float t_total;				// 2*t_acc + t_const
-	float posicion_inicial;		// Posicion cuando llega una consigna de posicion final nueva
-	float posicion_final;		// Consigna de posicion final
-	float distancia_total;		// abs(desplazamiento)
-	float consigna_posicion;	// Consigna de posicion interpolada para alimentar controlador
+	float t_total;				// Tiempo total para llegar a la consigna: 2*t_acc + t_const
+
+	uint32_t n;					// Tiempo actual relativo al inicio de la interpolacion
+	float consigna;	// Consigna de posicion interpolada para alimentar controlador
 } interpolador_t;
 
-void consigna_nueva(float posicion_inicial, float posicion_final);
-float interpolar();
-float misqrt(float x);
+void interpolador_init(interpolador_t *ip, float dt, float v_max, float a_max);
+void interpolador_nueva_xf(interpolador_t *ip, float x0, float xf);
+float interpolador_get_consigna(interpolador_t *ip);
+void set_v_max(interpolador_t *ip, float v_max);
+void set_a_max(interpolador_t *ip, float a_max);
 
 #endif //INTERPOLADOR_H

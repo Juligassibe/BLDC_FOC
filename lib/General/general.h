@@ -1,6 +1,8 @@
 #ifndef GENERAL_H
 #define GENERAL_H
 
+#include "interpolador.h"
+
 typedef enum {
 	INIT_OK = 0,
 	ADC1_CAL,
@@ -25,6 +27,8 @@ typedef enum {
 	CONTROL,
 	FALLA
 } estados_e;
+
+extern interpolador_t interpolador;
 
 // INICIALIZACION PERIFERICOS
 error_codes_e init_pwm();

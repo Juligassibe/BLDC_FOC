@@ -10,6 +10,8 @@ static const float PID_MAX = KT * I_MAX;
 static const float STEP2RAD = 2.0f * MY_PI / ENCODER_PPR;
 static const float STEP2DEG = 360.0f / ENCODER_PPR;
 
+interpolador_t interpolador = {0};
+
 static volatile controlador_posicion_t controlador_posicion = {
 	.Kp = PID_P,
 	.Ki = PID_I,
@@ -42,7 +44,7 @@ void lazo_posicion() {
 	float wm = (posicion - prev_position) * invDT;
 
 	// Interpolo nueva consigna
-	controlador_posicion.consigna = interpolar();
+	controlador_posicion.consigna = interpolador_get_consigna(&interpolador);
 
 	// Error de posicion
 	float error = controlador_posicion.consigna - posicion;

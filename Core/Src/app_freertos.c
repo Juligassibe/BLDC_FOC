@@ -32,6 +32,7 @@
 #include "corriente.h"
 #include "usart.h"
 #include "general.h"
+#include "interpolador.h"
 #include "posicion.h"
 #include "tim.h"
 #include "user_constants.h"
@@ -174,7 +175,7 @@ void consola(void *argument)
 
 	/* Infinite loop */
 	while (1) {
-		vTaskDelay(5);
+	vTaskDelay(10);
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"\r\n>> ", 5);
 
 		xQueueReceive(cola_consola, &mensaje, portMAX_DELAY);
@@ -312,6 +313,34 @@ void consola(void *argument)
 				break;
 			}
 
+			case 'v': {
+				char *fin;
+
+				float v_max = strtof(&mensaje.mensaje[2], &fin);
+
+				if (fin == &mensaje.mensaje[2]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar caracter enviado\r\n", 28);
+					break;
+				}
+
+				set_v_max((interpolador_t *)&interpolador, v_max);
+				break;
+			}
+
+			case 'w': {
+				char *fin;
+
+				float a_max = strtof(&mensaje.mensaje[2], &fin);
+
+				if (fin == &mensaje.mensaje[2]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar caracter enviado\r\n", 28);
+					break;
+				}
+
+				set_a_max((interpolador_t *)&interpolador, a_max);
+				break;
+			}
+
 			case 'h': {
 				char msj[] = "Ayuda:\r\n"
 						"	e: Estado del sistema\r\n"
@@ -324,8 +353,10 @@ void consola(void *argument)
 						"	d: Set Pd\r\n"
 						"	q: Set Pq\r\n"
 						"	x: Set P\r\n"
-						"   y: Set I\r\n"
-						"   z: Set D\r\n";
+						"	y: Set I\r\n"
+						"	z: Set D\r\n"
+						"	v: Set v_max\r\n"
+						"	w: Set a_max\r\n";
 
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)msj, strlen(msj));
 				break;
