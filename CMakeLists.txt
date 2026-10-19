@@ -46,7 +46,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    lib/MT6835/mt6835.c
+    lib/MT6835/stm32/mt6835.c
     lib/Interpolador/interpolador.c
     lib/Control/posicion.c
     lib/Control/corriente.c
@@ -59,7 +59,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
-    lib/MT6835
+    lib/MT6835/stm32
     lib/Interpolador
     lib/Control
     lib/clark_park
