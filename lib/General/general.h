@@ -14,8 +14,9 @@ typedef enum {
 	TIM_POS_START,
 	TIM_ENC_START,
 	ENCODER_CONFIG,
-	ENCODER_ZERO
-} return_codes_e;
+	ENCODER_ZERO,
+	OVERCURRENT
+} error_codes_e;
 
 typedef enum {
 	INIT = 0,
@@ -26,11 +27,11 @@ typedef enum {
 } estados_e;
 
 // INICIALIZACION PERIFERICOS
-return_codes_e init_pwm();
-return_codes_e init_adcs();
-return_codes_e init_timer_pos();
-return_codes_e init_timer_encoder();
-return_codes_e alinear_rotor();
+error_codes_e init_pwm();
+error_codes_e init_adcs();
+error_codes_e init_timer_pos();
+error_codes_e init_timer_encoder();
+error_codes_e alinear_rotor();
 void init_sistema();
 
 // INTERFAZ CONSOLA
@@ -41,5 +42,7 @@ void parada_emergencia();
 void mover(float angulo);
 void leer_posicion();
 void calibrar_adcs();
+
+void handle_sobrecorriente();
 
 #endif

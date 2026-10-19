@@ -5,11 +5,11 @@
 #include "spi.h"
 #include "mt6835.h"
 #include "posicion.h"
-#include "corriente.h"
+#include "current_sense.h"
 #include "interpolador.h"
 #include "user_constants.h"
 
-return_codes_e init_pwm() {
+error_codes_e init_pwm() {
 	if (HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1) != HAL_OK) {
 		return PWM_CH1;
 	}
@@ -25,7 +25,7 @@ return_codes_e init_pwm() {
 	return INIT_OK;
 }
 
-return_codes_e init_adcs() {
+error_codes_e init_adcs() {
 	if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED) != HAL_OK) {
 		return ADC1_CAL;
 	}
@@ -53,7 +53,7 @@ return_codes_e init_adcs() {
 	return INIT_OK;
 }
 
-return_codes_e init_timer_pos() {
+error_codes_e init_timer_pos() {
 	if (HAL_TIM_Base_Start(&htim6) != HAL_OK) {
 		return TIM_POS_START;
 	}
@@ -61,7 +61,7 @@ return_codes_e init_timer_pos() {
 	return INIT_OK;
 }
 
-return_codes_e init_timer_encoder() {
+error_codes_e init_timer_encoder() {
 	if (HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL) != HAL_OK) {
 		return TIM_ENC_START;
 	}
@@ -69,7 +69,7 @@ return_codes_e init_timer_encoder() {
 	return INIT_OK;
 }
 
-return_codes_e alinear_rotor() {
+error_codes_e alinear_rotor() {
 	// Alineo eje d con fase a
 	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0.03*__HAL_TIM_GET_AUTORELOAD(&htim3));
 	HAL_Delay(100);
@@ -103,7 +103,7 @@ return_codes_e alinear_rotor() {
 }
 
 void init_sistema() {
-	return_codes_e init = INIT_OK;
+	error_codes_e init = INIT_OK;
 
 	init = init_pwm();
 
@@ -204,7 +204,7 @@ void parada_emergencia() {
 
 void mover(float angulo) {
 	if (estado == CONTROL) {
-		consigna_nueva(angulo);
+		consigna_nueva(get_posicion(), angulo);
 	} else {
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Iniciar lazos de control\r\n", 26);
 	}
@@ -219,7 +219,7 @@ void leer_posicion() {
 		static char cadena[16] = {0};
 		uint8_t n = 0;
 
-		n = snprintf(cadena, sizeof(cadena), "%.2f", get_posicion());
+		n = snprintf(cadena, sizeof(cadena), "%.2f", get_posicion_deg());
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)cadena, n);
 	} else {
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Reiniciar sistema\r\n", 19);
@@ -229,7 +229,17 @@ void leer_posicion() {
 void calibrar_adcs() {
 	if (estado == IDLE) {
 		set_adc_offsets();
+	} else if (estado == CONTROL) {
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Detener lazos de control\r\n", 26);
 	} else {
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Reiniciar sistema\r\n", 19);
 	}
+}
+
+void handle_sobrecorriente() {
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3);
+	__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_UPDATE);
+	__HAL_TIM_DISABLE_IT(&htim6, TIM_IT_UPDATE);
 }

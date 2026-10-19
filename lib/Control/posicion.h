@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 
-#define PID_P			0.0001f
-#define PID_I			0.01f
-#define PID_D			0.00001f
 #define ENCODER_CNT_ZERO	INT32_MAX
 
 typedef struct {
@@ -17,7 +14,11 @@ typedef struct {
 } controlador_posicion_t;
 
 float get_posicion();
+float get_posicion_deg();
 void lazo_posicion();
 float get_consigna_torque();
+void pos_set_P(float P);
+void pos_set_I(float I);
+void pos_set_D(float D);
 
 #endif //POSICION_H

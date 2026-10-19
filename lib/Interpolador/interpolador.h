@@ -19,7 +19,7 @@ typedef struct {
 	float consigna_posicion;	// Consigna de posicion interpolada para alimentar controlador
 } interpolador_t;
 
-void consigna_nueva(float posicion_final);
+void consigna_nueva(float posicion_inicial, float posicion_final);
 float interpolar();
 float misqrt(float x);
 

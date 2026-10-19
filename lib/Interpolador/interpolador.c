@@ -1,6 +1,5 @@
 #include "interpolador.h"
 #include <math.h>			// Para sqrtf()
-#include "posicion.h"		// Para get_posicion()
 
 static interpolador_t interpolador = {
 	.v_max = V_MAX,
@@ -10,8 +9,8 @@ static interpolador_t interpolador = {
 
 static const float distancia_acc = V_MAX*V_MAX/A_MAX;
 
-void consigna_nueva(const float posicion_final) {
-	interpolador.posicion_inicial = get_posicion();
+void consigna_nueva(const float posicion_inicial, const float posicion_final) {
+	interpolador.posicion_inicial = posicion_inicial;
 	float desplazamiento = posicion_final - interpolador.posicion_inicial;
 	interpolador.distancia_total = (desplazamiento > 0) ? desplazamiento : -desplazamiento;
 

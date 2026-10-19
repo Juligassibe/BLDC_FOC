@@ -7,6 +7,7 @@
 static const float invDT = 1.0f / DT;
 static const float KT = 1.5f * PP * LAMBDA;
 static const float PID_MAX = KT * I_MAX;
+static const float STEP2RAD = 2.0f * MY_PI / ENCODER_PPR;
 static const float STEP2DEG = 360.0f / ENCODER_PPR;
 
 static volatile controlador_posicion_t controlador_posicion = {
@@ -23,8 +24,13 @@ float get_posicion() {
 	 * NO DEJAR HARDCODEADO EL 0.18f DE RESOLUCION DEL ENCODER
 	 * PONER EN FUNCION DE LOS ppr PUESTOS EN EL ENCODER
 	 */
+	return (float)((int32_t)(__HAL_TIM_GetCounter(&htim2) - ENCODER_CNT_ZERO)) * STEP2RAD;
+}
+
+float get_posicion_deg() {
 	return (float)((int32_t)(__HAL_TIM_GetCounter(&htim2) - ENCODER_CNT_ZERO)) * STEP2DEG;
 }
+
 
 void lazo_posicion() {
 	static float prev_position = 0.0f;
@@ -93,4 +99,16 @@ void lazo_posicion() {
 
 float get_consigna_torque() {
 	return controlador_posicion.consigna_torque;
+}
+
+void pos_set_P(float P) {
+	controlador_posicion.Kp = P;
+}
+
+void pos_set_I(float I) {
+	controlador_posicion.Ki = I;
+}
+
+void pos_set_D(float D) {
+	controlador_posicion.Kd = D;
 }

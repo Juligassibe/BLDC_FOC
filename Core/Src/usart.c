@@ -230,27 +230,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 		} else {
 			HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Comando largo\r\n", 15);
 		}
-
-		/*
-		char *end;
-		float nueva = strtof((char *)RX_BUF, &end);
-
-		if (*end != RX_BUF[0]) {
-			consigna_nueva(nueva);
-		} else if (RX_BUF[0] == 's') {
-			__HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
-			__HAL_TIM_ENABLE_IT(&htim6, TIM_IT_UPDATE);
-		} else if (RX_BUF[0] == 'p') {
-			__HAL_TIM_DISABLE_IT(&htim3, TIM_IT_UPDATE);
-			__HAL_TIM_DISABLE_IT(&htim6, TIM_IT_UPDATE);
-		} else if (RX_BUF[0] == 'c') {
-			__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, 0.02f*__HAL_TIM_GetAutoreload(&htim3));
-			__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 0*__HAL_TIM_GetAutoreload(&htim3));
-			__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, 0*__HAL_TIM_GetAutoreload(&htim3));
-		} else if (RX_BUF[0] == 'd') {
-			__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_1, 0*__HAL_TIM_GetAutoreload(&htim3));
-		}
-		*/
 	}
 
 	uart_receive_dma(&huart4);

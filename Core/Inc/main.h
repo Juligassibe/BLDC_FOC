@@ -21,7 +21,6 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MAIN_H
 #define __MAIN_H
-#include "general.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,6 +36,7 @@ extern "C" {
 
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "general.h"
 
 /* USER CODE END Includes */
 
@@ -61,7 +61,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 
 void enviar_cola_estados(estados_e estado);
-void enviar_cola_fallas(return_codes_e falla);
+void enviar_cola_fallas(error_codes_e falla);
 
 /* USER CODE END EFP */
 

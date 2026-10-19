@@ -29,8 +29,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "corriente.h"
 #include "usart.h"
 #include "general.h"
+#include "posicion.h"
+#include "tim.h"
+#include "user_constants.h"
 
 /* USER CODE END Includes */
 
@@ -61,23 +65,30 @@ estados_e estado = INIT;
 /* Definitions for tarea_consola */
 osThreadId_t tarea_consolaHandle;
 const osThreadAttr_t tarea_consola_attributes = {
-	.name = "tarea_consola",
-	.priority = (osPriority_t)osPriorityNormal,
-	.stack_size = 512 * 4
+  .name = "tarea_consola",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 512 * 4
 };
 /* Definitions for tarea_sm */
 osThreadId_t tarea_smHandle;
 const osThreadAttr_t tarea_sm_attributes = {
-	.name = "tarea_sm",
-	.priority = (osPriority_t)osPriorityHigh4,
-	.stack_size = 512 * 4
+  .name = "tarea_sm",
+  .priority = (osPriority_t) osPriorityHigh4,
+  .stack_size = 512 * 4
 };
 /* Definitions for tarea_errores */
 osThreadId_t tarea_erroresHandle;
 const osThreadAttr_t tarea_errores_attributes = {
-	.name = "tarea_errores",
-	.priority = (osPriority_t)osPriorityHigh,
-	.stack_size = 512 * 4
+  .name = "tarea_errores",
+  .priority = (osPriority_t) osPriorityHigh,
+  .stack_size = 512 * 4
+};
+/* Definitions for test */
+osThreadId_t testHandle;
+const osThreadAttr_t test_attributes = {
+  .name = "test",
+  .priority = (osPriority_t) osPriorityLow,
+  .stack_size = 256 * 4
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -88,6 +99,7 @@ const osThreadAttr_t tarea_errores_attributes = {
 void consola(void *argument);
 void maquina_estados(void *argument);
 void handler_errores(void *argument);
+void test_task(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -97,48 +109,52 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   * @retval None
   */
 void MX_FREERTOS_Init(void) {
-	/* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
 
-	/* USER CODE END Init */
+  /* USER CODE END Init */
 
-	/* USER CODE BEGIN RTOS_MUTEX */
+  /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
-	/* USER CODE END RTOS_MUTEX */
+  /* USER CODE END RTOS_MUTEX */
 
-	/* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
 	/* add semaphores, ... */
-	/* USER CODE END RTOS_SEMAPHORES */
+  /* USER CODE END RTOS_SEMAPHORES */
 
-	/* USER CODE BEGIN RTOS_TIMERS */
+  /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
-	/* USER CODE END RTOS_TIMERS */
+  /* USER CODE END RTOS_TIMERS */
 
-	/* USER CODE BEGIN RTOS_QUEUES */
+  /* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
 
 	cola_consola = xQueueCreate(5, sizeof(mensaje_cli_t));
-	cola_errores = xQueueCreate(3, sizeof(return_codes_e));
+	cola_errores = xQueueCreate(3, sizeof(error_codes_e));
 	cola_estados = xQueueCreate(3, sizeof(estados_e));
 
-	/* USER CODE END RTOS_QUEUES */
+  /* USER CODE END RTOS_QUEUES */
 
-	/* Create the thread(s) */
-	/* creation of tarea_consola */
-	tarea_consolaHandle = osThreadNew(consola, NULL, &tarea_consola_attributes);
+  /* Create the thread(s) */
+  /* creation of tarea_consola */
+  tarea_consolaHandle = osThreadNew(consola, NULL, &tarea_consola_attributes);
 
-	/* creation of tarea_sm */
-	tarea_smHandle = osThreadNew(maquina_estados, NULL, &tarea_sm_attributes);
+  /* creation of tarea_sm */
+  tarea_smHandle = osThreadNew(maquina_estados, NULL, &tarea_sm_attributes);
 
-	/* creation of tarea_errores */
-	tarea_erroresHandle = osThreadNew(handler_errores, NULL, &tarea_errores_attributes);
+  /* creation of tarea_errores */
+  tarea_erroresHandle = osThreadNew(handler_errores, NULL, &tarea_errores_attributes);
 
-	/* USER CODE BEGIN RTOS_THREADS */
+  /* creation of test */
+  testHandle = osThreadNew(test_task, NULL, &test_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-	/* USER CODE END RTOS_THREADS */
+  /* USER CODE END RTOS_THREADS */
 
-	/* USER CODE BEGIN RTOS_EVENTS */
+  /* USER CODE BEGIN RTOS_EVENTS */
 	/* add events, ... */
-	/* USER CODE END RTOS_EVENTS */
+  /* USER CODE END RTOS_EVENTS */
+
 }
 
 /* USER CODE BEGIN Header_consola */
@@ -148,8 +164,9 @@ void MX_FREERTOS_Init(void) {
   * @retval None
   */
 /* USER CODE END Header_consola */
-void consola(void *argument) {
-	/* USER CODE BEGIN consola */
+void consola(void *argument)
+{
+  /* USER CODE BEGIN consola */
 
 	mensaje_cli_t mensaje = {0};
 
@@ -157,6 +174,7 @@ void consola(void *argument) {
 
 	/* Infinite loop */
 	while (1) {
+		vTaskDelay(5);
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"\r\n>> ", 5);
 
 		xQueueReceive(cola_consola, &mensaje, portMAX_DELAY);
@@ -174,9 +192,9 @@ void consola(void *argument) {
 				parar_lazos();
 				break;
 
-			case 'm':
+			case 'm': {
 				char *fin = &mensaje.mensaje[2];
-				float angulo = strtof(&mensaje.mensaje[2], &fin);
+				float angulo = strtof(&mensaje.mensaje[2], &fin) * MY_PI/180.0f;
 
 				// VERIFICO QUE EL COMANDO "m ..." CONTENGA UN ANGULO VALIDO QUE SE PUEDA LEER COMO FLOAT
 				if (*fin == mensaje.mensaje[2]) {
@@ -186,6 +204,7 @@ void consola(void *argument) {
 
 				mover(angulo);
 				break;
+			}
 
 			case 'c':
 				mover(0.0f);
@@ -199,25 +218,125 @@ void consola(void *argument) {
 				calibrar_adcs();
 				break;
 
-			case 'h':
-				char msj[] = "Ayuda:"
+			case 'd': {
+				char *fin = &mensaje.mensaje[2];
+				float new_Pd = strtof(&mensaje.mensaje[2], &fin);
+
+				if (*fin == mensaje.mensaje[2]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar angulo enviado\r\n", 26);
+					break;
+				}
+
+				cur_set_Pd(new_Pd);
+				break;
+			}
+			case 'q': {
+				char *fin = &mensaje.mensaje[2];
+				float new_Pq = strtof(&mensaje.mensaje[2], &fin);
+
+				if (*fin == mensaje.mensaje[2]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar angulo enviado\r\n", 26);
+					break;
+				}
+
+				cur_set_Pq(new_Pq);
+				break;
+			}
+
+			case 'x': {
+				char *fin = &mensaje.mensaje[2];
+				float new_P = strtof(&mensaje.mensaje[2], &fin);
+
+				if (*fin == mensaje.mensaje[2]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar angulo enviado\r\n", 26);
+					break;
+				}
+
+				pos_set_P(new_P);
+				break;
+			}
+
+			case 'y': {
+				char *fin = &mensaje.mensaje[2];
+				float new_I = strtof(&mensaje.mensaje[2], &fin);
+
+				if (*fin == mensaje.mensaje[2]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar angulo enviado\r\n", 26);
+					break;
+				}
+
+				pos_set_I(new_I);
+				break;
+			}
+
+			case 'z': {
+				char *fin = &mensaje.mensaje[2];
+				float new_D = strtof(&mensaje.mensaje[2], &fin);
+
+				if (*fin == mensaje.mensaje[2]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar angulo enviado\r\n", 26);
+					break;
+				}
+
+				pos_set_D(new_D);
+				break;
+			}
+
+			case 't': {
+				char *fin;
+				float duty = strtof(&mensaje.mensaje[3], &fin) / 100.0;
+
+				if (fin == &mensaje.mensaje[3]) {
+					HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar duty enviado\r\n", 24);
+					break;
+				}
+
+				char fase = mensaje.mensaje[1];
+				switch (fase) {
+					case 'a':
+						__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, duty * __HAL_TIM_GET_AUTORELOAD(&htim3));
+						break;
+
+					case 'b':
+						__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, duty * __HAL_TIM_GET_AUTORELOAD(&htim3));
+						break;
+
+					case 'c':
+						__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, duty * __HAL_TIM_GET_AUTORELOAD(&htim3));
+						break;
+
+					default:
+						HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Verificar fase\r\n", 16);
+						break;
+				}
+				break;
+			}
+
+			case 'h': {
+				char msj[] = "Ayuda:\r\n"
 						"	e: Estado del sistema\r\n"
 						"	i: Iniciar lazos de control\r\n"
 						"	p: Parar lazos de control\r\n"
 						"	m X: Mover a posicion X\r\n"
 						"	c: Mover a cero\r\n"
 						"	l: Leer posicion\r\n"
-						"	a: Calibrar ADCs\r\n";
+						"	a: Calibrar ADCs\r\n"
+						"	d: Set Pd\r\n"
+						"	q: Set Pq\r\n"
+						"	x: Set P\r\n"
+						"   y: Set I\r\n"
+						"   z: Set D\r\n";
 
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)msj, strlen(msj));
 				break;
+			}
 
 			default:
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Comando desconocido (h para ayuda)\r\n", 36);
 				break;
 		}
 	}
-	/* USER CODE END consola */
+  /* USER CODE END consola */
 }
 
 /* USER CODE BEGIN Header_maquina_estados */
@@ -227,38 +346,44 @@ void consola(void *argument) {
 * @retval None
 */
 /* USER CODE END Header_maquina_estados */
-void maquina_estados(void *argument) {
-	/* USER CODE BEGIN maquina_estados */
+void maquina_estados(void *argument)
+{
+  /* USER CODE BEGIN maquina_estados */
 
 	/* Infinite loop */
 	while (1) {
 		switch (estado) {
 			case INIT:
 				init_sistema();
+				estado = INIT;
 				break;
 
 			case IDLE:
-				mensaje_cli_t mensaje;
+				mensaje_cli_t mensaje = {0};
 				xQueueSend(cola_consola, &mensaje, 100);
+				estado = IDLE;
 				break;
 
 			case PARADA:
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Parada emergencia\r\n", 15);
 				enviar_cola_estados(FALLA);
+				estado = PARADA;
 				break;
 
 			case CONTROL:
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Control iniciado\r\n", 18);
+				estado = CONTROL;
 				break;
 
 			case FALLA:
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Reiniciar sistema...\r\n", 29);
+				estado = FALLA;
 				break;
 		}
 
 		xQueueReceive(cola_estados, &estado, portMAX_DELAY);
 	}
-	/* USER CODE END maquina_estados */
+  /* USER CODE END maquina_estados */
 }
 
 /* USER CODE BEGIN Header_handler_errores */
@@ -268,10 +393,11 @@ void maquina_estados(void *argument) {
 * @retval None
 */
 /* USER CODE END Header_handler_errores */
-void handler_errores(void *argument) {
-	/* USER CODE BEGIN handler_errores */
+void handler_errores(void *argument)
+{
+  /* USER CODE BEGIN handler_errores */
 
-	return_codes_e error;
+	error_codes_e error;
 
 	/* Infinite loop */
 	while (1) {
@@ -326,6 +452,11 @@ void handler_errores(void *argument) {
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Error: Zero Encoder\r\n", 21);
 				break;
 
+			case OVERCURRENT:
+
+				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Error: Sobrecorriente\r\n", 23);
+				break;
+
 			default:
 				HAL_UART_Transmit_DMA(&huart4, (uint8_t *)"Error: Desconocido\r\n", 20);
 				break;
@@ -333,7 +464,26 @@ void handler_errores(void *argument) {
 
 		enviar_cola_estados(FALLA);
 	}
-	/* USER CODE END handler_errores */
+  /* USER CODE END handler_errores */
+}
+
+/* USER CODE BEGIN Header_test_task */
+/**
+* @brief Function implementing the test thread.
+* @param argument: Not used
+* @retval None
+*/
+volatile float debug = 0;
+/* USER CODE END Header_test_task */
+void test_task(void *argument)
+{
+  /* USER CODE BEGIN test_task */
+  /* Infinite loop */
+  while (1) {
+  	debug = get_posicion_deg();
+    osDelay(200);
+  }
+  /* USER CODE END test_task */
 }
 
 /* Private application code --------------------------------------------------*/
@@ -344,9 +494,10 @@ void enviar_cola_estados(estados_e estado) {
 	xQueueSend(cola_estados, &estado_nuevo, 100);
 }
 
-void enviar_cola_fallas(return_codes_e error) {
-	return_codes_e error_nuevo = error;
+void enviar_cola_fallas(error_codes_e error) {
+	error_codes_e error_nuevo = error;
 	xQueueSend(cola_errores, &error_nuevo, 100);
 }
 
 /* USER CODE END Application */
+
