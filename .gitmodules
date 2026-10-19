@@ -1,0 +1,3 @@
+[submodule "lib/MT6835"]
+	path = lib/MT6835
+	url = git@github.com:Juligassibe/MT6835.git
